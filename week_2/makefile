@@ -35,3 +35,4 @@ run:
 	./$(TARGET) -w "Hello world! This is a test string."
 
 .PHONY: all clean run
+
