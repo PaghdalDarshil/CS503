@@ -10,7 +10,7 @@
 
 ## Run the following command to compile:
 
-gcc -o stringfun stringfun.c
+make (make sure you have the makefile in the same folder as the stringfun.c file)
 
 ## Usage
 ./stringfun [-h|c|r|w] "string"
@@ -18,32 +18,49 @@ gcc -o stringfun stringfun.c
 ## Options
 
 -h: Display help
+
 -c: Count words
+
 -r: Reverse the string
+
 -w: Print words with their lengths
 
-Examples
 
-Help
+## Examples
+
+### Help
+
 ./stringfun -h
-Count Words
+
+### Count Words
+
 ./stringfun -c "Sample string"
-Output:
+
+### Output:
 
 Word Count: 2
-Buffer:  Sample string....................................
-Reverse String
+Buffer:  Sample string
+
+### Reverse String
+
 ./stringfun -r "Reverse me"
-Output:
+
+### Output:
 
 Reversed String: em esreveR
-Print Words
+
+### Print Words
+
 ./stringfun -w "Word lengths"
-Output:
+
+### Output:
 
 1. Word (4)
 2. lengths (7)
-Notes
+
+
+## Notes
 
 Buffer size is fixed at 50 characters.
+
 Extra spaces and tabs are compressed.
