@@ -102,11 +102,11 @@ Please answer the following questions and submit in your repo for the second ass
 
     - Please explain why the file size reported by the `ls` command was 128 bytes after adding student with ID=1, 256 after adding student with ID=3, and 4160 after adding the student with ID=64? 
 
-        > **ANSWER:** The file size increses in the stpes based on the highest student ID multiple by the record size (64 bytes). The command ls -l reports the logical file size which includes holes due to the lseek() system cell.
+        > **ANSWER:** The file size increses in the stpes based on the highest student ID multiple by the record size (64 bytes). The command ls -l reports the logical file size which includes holes due to the lseek() system cell. for exampe ID 1 : - 1*64 =-64 64 bytes.
 
     -   Why did the total storage used on the disk remain unchanged when we added the student with ID=1, ID=3, and ID=63, but increased from 4K to 8K when we added the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:** The linux creats sparse files meaning it does not allocate actual disk space for the empty gap.So, when the ID 1,3,63 were added , the gaps remained unallocatd.Which leads to the ID 64 to dross the default filesystem block size, forcing the system to allocate anothr block which increases the disk space.
 
     - Now lets add one more student with a large student ID number  and see what happens:
 
@@ -119,4 +119,4 @@ Please answer the following questions and submit in your repo for the second ass
         ```
         We see from above adding a student with a very large student ID (ID=99999) increased the file size to 6400000 as shown by `ls` but the raw storage only increased to 12K as reported by `du`.  Can provide some insight into why this happened?
 
-        > **ANSWER:**  _start here_
+        > **ANSWER:**  The command lseek() jumps to offset 99999*64 = 6.4 MB which increases the logical file size. however the actual disk allocation remains low beacuse the file system only alloctes blocks when data is written and this demonstrate the efficient sparse file handling.
