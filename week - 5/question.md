@@ -32,7 +32,8 @@
 
 - You should have also learned about "pipes". Redirection and piping both involve controlling input and output in the shell, but they serve different purposes. Explain the key differences between redirection and piping.
 
-    > **Answer**:1. Redirection (> and <): Changes the command's input or output source. It usually works with the files (for example, command > file.txt saves output to a file).
+    > **Answer**:
+    > 1. Redirection (> and <): Changes the command's input or output source. It usually works with the files (for example, command > file.txt saves output to a file).
     > 2. Piping (|) is used to pass the output of one command as input to another (command1 | command2). It allows you to link numerous commands together in a succession.
     > Redirection is commonly used for the file-based input/output management, whereas piping is for the command-to-command communication.
 
