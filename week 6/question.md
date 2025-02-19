@@ -25,9 +25,9 @@
 7. What changes did you make to your parsing logic compared to the previous assignment? Were there any unexpected challenges in refactoring your old code?
 
     > **Answer**:
-    > Part 1: To handle piped instructions, use command_list_t (e.g., cmd1 | cmd2).
+    > Assignment Part 1: To handle piped instructions, use command_list_t (e.g., cmd1 | cmd2).
     > 
-    > Part 2: Simplified to cmd_buff_t for single commands and removed pipe support.
+    > assignment Part 2: Simplified to cmd_buff_t for single commands and removed pipe support.
     > 
     > Challenges included ensuring that quoted arguments (e.g., echo "Hello World") were correctly tokenized without breaking extreme cases such as empty strings or unterminated quotes.
 
@@ -41,7 +41,9 @@
 
     > **Answer**:
     > SIGINT: Request for graceful termination (which can be caught and cleaned up).
+    > 
     > SIGTERM: Default termination signal (whcih enables cleanup).
+    > 
     > SIGKILL: Causes immediate termination (which cannot be caught).
 
 
