@@ -26,7 +26,9 @@
 
     > **Answer**:
     > Part 1: To handle piped instructions, use command_list_t (e.g., cmd1 | cmd2).
+    > 
     > Part 2: Simplified to cmd_buff_t for single commands and removed pipe support.
+    > 
     > Challenges included ensuring that quoted arguments (e.g., echo "Hello World") were correctly tokenized without breaking extreme cases such as empty strings or unterminated quotes.
 
 8. For this quesiton, you need to do some research on Linux signals. You can use [this google search](https://www.google.com/search?q=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&oq=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBzc2MGowajeoAgCwAgA&sourceid=chrome&ie=UTF-8) to get started.
