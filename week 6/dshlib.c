@@ -257,4 +257,3 @@ int exec_local_cmd_loop() {
     free_cmd_buff(&cmd);
     return OK;
 }
-//complete 
