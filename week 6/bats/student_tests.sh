@@ -1,15 +1,7 @@
-#!/usr/bin/env bats
-
-# File: student_tests.sh
-# 
-# Create your unit tests suit in this file
-
 @test "Example: check ls runs without errors" {
-    run ./dsh <<EOF                
+    run ./dsh <<EOF
 ls
 EOF
-
-    # Assertions
     [ "$status" -eq 0 ]
 }
 
@@ -17,7 +9,6 @@ EOF
     run ./dsh <<EOF
 exit
 EOF
-    # Should see normal exit (0) and loop termination message
     [ "$status" -eq 0 ]
     [[ "$output" == *"cmd loop returned 0"* ]]
 }
@@ -29,8 +20,7 @@ cd $tmpdir
 pwd
 exit
 EOF
-    # Cleanup test directory
-    rmdir $tmpdir
+    rmdir $tmpdir  # Cleanup
     [ "$status" -eq 0 ]
     [[ "$output" == *"$tmpdir"* ]]
 }
@@ -39,7 +29,7 @@ EOF
     run ./dsh <<EOF
 this_command_does_not_exist
 EOF
-    [ "$status" -eq 0 ]  # Shell should continue running
+    [ "$status" -eq 0 ]  
     [[ "$output" == *"The command does not found"* ]]
 }
 
@@ -49,15 +39,45 @@ dragon
 exit
 EOF
     [ "$status" -eq 0 ]
-    # Match either the header or actual dragon output
     [[ "$output" == *"Drexel Dragon"* ]] || [[ "$output" == *"ASCII Art"* ]]
 }
 
 @test "Empty command shows warning" {
     run ./dsh <<EOF
-      
-    # Just spaces and enter
+    
 EOF
     [ "$status" -eq 0 ]
     [[ "$output" == *"warning: no commands"* ]]
+}
+
+@test "cd to non-existent directory" {
+    run ./dsh <<EOF
+cd /nonexistent_directory
+exit
+EOF
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"cd error"* ]]
+}
+
+@test "Long command input" {
+    long_command=$(printf '%*s' 500 | tr ' ' 'a')
+    run ./dsh <<EOF
+$long_command
+exit
+EOF
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"The command does not found"* ]]
+}
+
+@test "Verify rc command returns last command status" {
+    run ./dsh <<EOF
+rc
+false
+rc
+exit
+EOF
+    return_codes=($(echo "$output" | sed -E 's/dsh2> //g' | grep -E '^[0-9]+$' | tail -n 2))
+    [ "${#return_codes[@]}" -ge 2 ]
+    [ "${return_codes[0]}" -eq 0 ]
+    [ "${return_codes[1]}" -eq 1 ]
 }
