@@ -55,28 +55,38 @@
 
 extern void print_dragon();
 
+int last_return_code = 0;
+
 int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
     cmd_buff->_cmd_buffer = malloc(SH_CMD_MAX + 1);
     if (!cmd_buff->_cmd_buffer) 
-    return ERR_MEMORY;
+        return ERR_MEMORY;
     cmd_buff->argc = 0;
     memset(cmd_buff->argv, 0, sizeof(cmd_buff->argv));
     return OK;
 }
 
 int free_cmd_buff(cmd_buff_t *cmd_buff) {
-    if (cmd_buff->_cmd_buffer) free(cmd_buff->_cmd_buffer);
+    if (cmd_buff->_cmd_buffer) {
+        free(cmd_buff->_cmd_buffer);
+    }
     cmd_buff->_cmd_buffer = NULL;
     cmd_buff->argc = 0;
     return OK;
 }
 
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
+    if (!cmd_line || !cmd_buff) return ERR_CMD_ARGS_BAD;
+
+    if (strlen(cmd_line) > SH_CMD_MAX) {
+        fprintf(stderr, "The command does not found\n");
+        return ERR_CMD_ARGS_BAD;
+    }
+
     char *input = cmd_line;
     int num_tokens = 0;
     int in_quote = 0;
     
-    // This will skip the leading whitespace
     while (isspace(*input)) input++;
     
     if (*input == '\0') 
@@ -84,17 +94,14 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 
     char *current = input;
     char *token_start = input;
-    char *tokens[CMD_ARGV_MAX];
+    char *tokens[CMD_ARGV_MAX] = { NULL };
 
     while (*current) {
         if (*current == '"') {
             in_quote = !in_quote;
             if (!in_quote) {
-                // This will store the quoted token
                 tokens[num_tokens] = strndup(token_start, current - token_start);
                 if (++num_tokens >= CMD_ARGV_MAX) goto too_many_tokens;
-                
-                // This will skip the trailing whitespace after quote
                 while (isspace(*++current)) current++;
                 token_start = current;
                 continue;
@@ -102,12 +109,10 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
             token_start = current + 1;
         }
         else if (!in_quote && isspace(*current)) {
-            // This will stores the normal token
             if (current > token_start) {
                 tokens[num_tokens] = strndup(token_start, current - token_start);
                 if (++num_tokens >= CMD_ARGV_MAX) goto too_many_tokens;
             }
-            // This will skip the consecutive spaces
             while (isspace(*current)) current++;
             token_start = current;
             continue;
@@ -115,7 +120,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
         current++;
     }
 
-    // This will handle the final token
     if (current > token_start && !in_quote) {
         tokens[num_tokens] = strndup(token_start, current - token_start);
         if (++num_tokens >= CMD_ARGV_MAX) goto too_many_tokens;
@@ -126,10 +130,10 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
         return ERR_CMD_ARGS_BAD;
     }
 
-    // This will allocate the contiguous buffer
     size_t buffer_size = 0;
-    for (int i = 0; i < num_tokens; i++)
+    for (int i = 0; i < num_tokens; i++) {
         buffer_size += strlen(tokens[i]) + 1;
+    }
 
     free_cmd_buff(cmd_buff);
     cmd_buff->_cmd_buffer = malloc(buffer_size);
@@ -138,7 +142,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
         return ERR_MEMORY;
     }
 
-    // This will copy tokens to buffer
     char *ptr = cmd_buff->_cmd_buffer;
     cmd_buff->argc = num_tokens;
     for (int i = 0; i < num_tokens; i++) {
@@ -158,11 +161,16 @@ too_many_tokens:
 Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
     if (!cmd->argv[0]) 
         return BI_NOT_BI;
+
     if (strcmp(cmd->argv[0], "exit") == 0) {
         return BI_CMD_EXIT;
     }
     else if (strcmp(cmd->argv[0], "cd") == 0) {
-        if (cmd->argc > 1 && chdir(cmd->argv[1]) != 0) {
+        if (cmd->argc < 2) {
+            fprintf(stderr, "cd error: Missing argument\n");
+            return BI_CMD_CD;
+        }
+        if (chdir(cmd->argv[1]) != 0) {
             perror("cd error");
         }
         return BI_CMD_CD;
@@ -171,30 +179,43 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
         print_dragon();
         return BI_CMD_DRAGON;
     }
+    else if (strcmp(cmd->argv[0], "rc") == 0) { 
+        printf("%d\n", last_return_code);
+        return BI_RC;
+    }
     return BI_NOT_BI;
 }
 
 int exec_cmd(cmd_buff_t *cmd) {
+    if (!cmd->argv[0]) return ERR_EXEC_CMD;
+
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork error");
         return ERR_EXEC_CMD;
     } 
-    else if (pid == 0) {  // This is child process
+    else if (pid == 0) {  
         execvp(cmd->argv[0], cmd->argv);
-        fprintf(stderr, "The command does not found\n");
-        exit(EXIT_FAILURE);
+
+        fprintf(stderr, "The command does not found\n");  
+        exit(errno);
     }
-    else {  // This is parent process
+    else {  
         int status;
         waitpid(pid, &status, 0);
-        return WEXITSTATUS(status);
+        last_return_code = WEXITSTATUS(status);
+        return last_return_code;
     }
 }
 
 int exec_local_cmd_loop() {
     char input[SH_CMD_MAX];
     cmd_buff_t cmd;
+
+    if (alloc_cmd_buff(&cmd) != OK) {
+        fprintf(stderr, "Failed to allocate command buffer\n");
+        return ERR_MEMORY;
+    }
 
     while (1) {
         printf("%s", SH_PROMPT);
@@ -204,10 +225,17 @@ int exec_local_cmd_loop() {
         }
         input[strcspn(input, "\n")] = '\0';
 
+        if (strlen(input) == 0) {
+            fprintf(stderr, "%s", CMD_WARN_NO_CMD);
+            continue;
+        }
+
         int parse_status = build_cmd_buff(input, &cmd);
-        if (parse_status != OK) {
-            fprintf(stderr, "%s", parse_status == WARN_NO_CMDS ? 
-                   CMD_WARN_NO_CMD : CMD_ERR_PIPE_LIMIT);
+        if (parse_status == WARN_NO_CMDS) {
+            fprintf(stderr, "%s", CMD_WARN_NO_CMD);
+            continue;
+        } else if (parse_status == ERR_TOO_MANY_COMMANDS) {
+            fprintf(stderr, "%s", CMD_ERR_PIPE_LIMIT);
             continue;
         }
 
@@ -217,14 +245,16 @@ int exec_local_cmd_loop() {
             break;
         }
         else if (bic == BI_NOT_BI) {
-            int rc = exec_cmd(&cmd);
-            if (rc != OK) {
-                fprintf(stderr, "The command exited with the status %d\n", rc);
+            last_return_code = exec_cmd(&cmd);
+            if (last_return_code != OK) {
+                fprintf(stderr, "The command exited with status %d\n", last_return_code);
             }
         }
 
         free_cmd_buff(&cmd);
     }
 
+    free_cmd_buff(&cmd);
     return OK;
 }
+//complete 
