@@ -2,38 +2,58 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 
 #include "dshlib.h"
 
 /*
- *  build_cmd_list
- *    cmd_line:     the command line from the user
- *    clist *:      pointer to clist structure to be populated
- *
- *  This function builds the command_list_t structure passed by the caller
- *  It does this by first splitting the cmd_line into commands by spltting
- *  the string based on any pipe characters '|'.  It then traverses each
- *  command.  For each command (a substring of cmd_line), it then parses
- *  that command by taking the first token as the executable name, and
- *  then the remaining tokens as the arguments.
- *
- *  NOTE your implementation should be able to handle properly removing
- *  leading and trailing spaces!
- *
- *  errors returned:
- *
- *    OK:                      No Error
- *    ERR_TOO_MANY_COMMANDS:   There is a limit of CMD_MAX (see dshlib.h)
- *                             commands.
- *    ERR_CMD_OR_ARGS_TOO_BIG: One of the commands provided by the user
- *                             was larger than allowed, either the
- *                             executable name, or the arg string.
- *
- *  Standard Library Functions You Might Want To Consider Using
- *      memset(), strcmp(), strcpy(), strtok(), strlen(), strchr()
+ * Implement your exec_local_cmd_loop function by building a loop that prompts the 
+ * user for input.  Use the SH_PROMPT constant from dshlib.h and then
+ * use fgets to accept user input.
+ * 
+ *      while(1){
+ *        printf("%s", SH_PROMPT);
+ *        if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
+ *           printf("\n");
+ *           break;
+ *        }
+ *        //remove the trailing \n from cmd_buff
+ *        cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
+ * 
+ *        //IMPLEMENT THE REST OF THE REQUIREMENTS
+ *      }
+ * 
+ *   Also, use the constants in the dshlib.h in this code.  
+ *      SH_CMD_MAX              maximum buffer size for user input
+ *      EXIT_CMD                constant that terminates the dsh program
+ *      SH_PROMPT               the shell prompt
+ *      OK                      the command was parsed properly
+ *      WARN_NO_CMDS            the user command was empty
+ *      ERR_TOO_MANY_COMMANDS   too many pipes used
+ *      ERR_MEMORY              dynamic memory management failure
+ * 
+ *   errors returned
+ *      OK                     No error
+ *      ERR_MEMORY             Dynamic memory management failure
+ *      WARN_NO_CMDS           No commands parsed
+ *      ERR_TOO_MANY_COMMANDS  too many pipes used
+ *   
+ *   console messages
+ *      CMD_WARN_NO_CMD        print on WARN_NO_CMDS
+ *      CMD_ERR_PIPE_LIMIT     print on ERR_TOO_MANY_COMMANDS
+ *      CMD_ERR_EXECUTE        print on execution failure of external command
+ * 
+ *  Standard Library Functions You Might Want To Consider Using (assignment 1+)
+ *      malloc(), free(), strlen(), fgets(), strcspn(), printf()
+ * 
+ *  Standard Library Functions You Might Want To Consider Using (assignment 2+)
+ *      fork(), execvp(), exit(), chdir()
  */
-int build_cmd_list(char *cmd_line, command_list_t *clist)
+int exec_local_cmd_loop()
 {
-    printf(M_NOT_IMPL);
-    return EXIT_NOT_IMPL;
+   
+    return OK;
 }
