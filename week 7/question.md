@@ -1,4 +1,5 @@
 1. Your shell forks multiple child processes when executing piped commands. How does your implementation ensure that all child processes complete before the shell continues accepting user input? What would happen if you forgot to call waitpid() on all child processes?
+
 Ans: - By using waitpid() on each child process, our shell guarantees that they all complete before continuing. This is done in a loop after forking processes in execute_pipeline(). Each waitpid() call suspends execution until the associated child process quits, ensuring that all forked processes are cleaned up sequentially before the shell allows fresh user input.
  What Happens If We Forget Waitpid()?
  Zombie Processes: - If waitpid() is not invoked, terminated child processes persist in the process table as "zombies," eating system resources.
@@ -23,7 +24,7 @@ Ans: - The cd command is implemented as a built-in function rather than an exter
 
 4. Currently, your shell supports a fixed number of piped commands (CMD_MAX). How would you modify your implementation to allow an arbitrary number of piped commands while still handling memory allocation efficiently? What trade-offs would you need to consider?
 
-ANs: - Currently, the shell limits piped commands to a fixed array (CMD_MAX).  In order to allow for limitless piped instructions, a dynamic allocation of memory is required. Instead of a static array, commands and pipes should be allocated dynamically in response to user input.
+Ans: - Currently, the shell limits piped commands to a fixed array (CMD_MAX).  In order to allow for limitless piped instructions, a dynamic allocation of memory is required. Instead of a static array, commands and pipes should be allocated dynamically in response to user input.
  Trade-offs: - 
  Higher complexity: - Requires careful memory management to prevent leaks.
  Performance Overhead: - Frequent allocations can slow down execution.
