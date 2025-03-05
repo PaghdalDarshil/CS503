@@ -53,8 +53,6 @@
  *      fork(), execvp(), exit(), chdir()
  */
 
-extern void print_dragon();
-
 int last_return_code = 0;
 
 int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
@@ -79,9 +77,10 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
     if (!cmd_line || !cmd_buff) return ERR_CMD_ARGS_BAD;
 
     if (strlen(cmd_line) > SH_CMD_MAX) {
-        fprintf(stderr, "The command does not found\n");
+        fprintf(stderr, "Error: Command too long.\n");
+        last_return_code = 127; 
         return ERR_CMD_ARGS_BAD;
-    }
+    }        
 
     char *input = cmd_line;
     int num_tokens = 0;
@@ -130,13 +129,8 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
         return ERR_CMD_ARGS_BAD;
     }
 
-    size_t buffer_size = 0;
-    for (int i = 0; i < num_tokens; i++) {
-        buffer_size += strlen(tokens[i]) + 1;
-    }
-
     free_cmd_buff(cmd_buff);
-    cmd_buff->_cmd_buffer = malloc(buffer_size);
+    cmd_buff->_cmd_buffer = malloc(SH_CMD_MAX);
     if (!cmd_buff->_cmd_buffer) {
         for (int i = 0; i < num_tokens; i++) free(tokens[i]);
         return ERR_MEMORY;
@@ -158,64 +152,83 @@ too_many_tokens:
     return ERR_TOO_MANY_COMMANDS;
 }
 
-Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
-    if (!cmd->argv[0]) 
-        return BI_NOT_BI;
+int build_cmd_list(char *cmd_line, command_list_t *clist) {
+    if (!cmd_line || !clist) return ERR_CMD_ARGS_BAD;
 
-    if (strcmp(cmd->argv[0], "exit") == 0) {
-        return BI_CMD_EXIT;
-    }
-    else if (strcmp(cmd->argv[0], "cd") == 0) {
-        if (cmd->argc < 2) {
-            fprintf(stderr, "cd error: Missing argument\n");
-            return BI_CMD_CD;
+    clist->num = 0;
+    char *token = strtok(cmd_line, PIPE_STRING);
+
+    while (token != NULL) {
+        if (clist->num >= CMD_MAX) {
+            return ERR_TOO_MANY_COMMANDS;
         }
-        if (chdir(cmd->argv[1]) != 0) {
-            perror("cd error");
-        }
-        return BI_CMD_CD;
+
+        while (isspace(*token)) token++;
+        char *end = token + strlen(token) - 1;
+        while (end > token && isspace(*end)) *end-- = '\0';
+
+        build_cmd_buff(token, &clist->commands[clist->num]);
+        clist->num++;
+
+        token = strtok(NULL, PIPE_STRING);
     }
-    else if (strcmp(cmd->argv[0], "dragon") == 0) {
-        print_dragon();
-        return BI_CMD_DRAGON;
-    }
-    else if (strcmp(cmd->argv[0], "rc") == 0) { 
-        printf("%d\n", last_return_code);
-        return BI_RC;
-    }
-    return BI_NOT_BI;
+
+    return OK;
 }
 
-int exec_cmd(cmd_buff_t *cmd) {
-    if (!cmd->argv[0]) return ERR_EXEC_CMD;
-
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork error");
-        return ERR_EXEC_CMD;
-    } 
-    else if (pid == 0) {  
-        execvp(cmd->argv[0], cmd->argv);
-
-        fprintf(stderr, "The command does not found\n");  
-        exit(errno);
+int execute_pipeline(command_list_t *clist) {
+    int pipes[CMD_MAX - 1][2];
+    pid_t pids[CMD_MAX];
+    int exit_status = 0; 
+    for (int i = 0; i < clist->num - 1; i++) {
+        if (pipe(pipes[i]) < 0) {
+            perror("pipe error");
+            return ERR_EXEC_CMD;
+        }
     }
-    else {  
+
+    for (int i = 0; i < clist->num; i++) {
+        pids[i] = fork();
+
+        if (pids[i] < 0) {
+            perror("fork error");
+            return ERR_EXEC_CMD;
+        }
+
+        if (pids[i] == 0) { 
+            if (i > 0) dup2(pipes[i - 1][0], STDIN_FILENO);
+            if (i < clist->num - 1) dup2(pipes[i][1], STDOUT_FILENO);
+
+            for (int j = 0; j < clist->num - 1; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+
+            execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            perror("exec failed");
+            _exit(127);  
+        }
+    }
+
+    for (int i = 0; i < clist->num - 1; i++) {
+        close(pipes[i][0]);
+        close(pipes[i][1]);
+    }
+
+    for (int i = 0; i < clist->num; i++) {
         int status;
-        waitpid(pid, &status, 0);
-        last_return_code = WEXITSTATUS(status);
-        return last_return_code;
+        waitpid(pids[i], &status, 0);
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            exit_status = WEXITSTATUS(status);
+        }
     }
+
+    return exit_status;
 }
 
 int exec_local_cmd_loop() {
     char input[SH_CMD_MAX];
-    cmd_buff_t cmd;
-
-    if (alloc_cmd_buff(&cmd) != OK) {
-        fprintf(stderr, "Failed to allocate command buffer\n");
-        return ERR_MEMORY;
-    }
+    command_list_t cmd_list;
 
     while (1) {
         printf("%s", SH_PROMPT);
@@ -226,11 +239,26 @@ int exec_local_cmd_loop() {
         input[strcspn(input, "\n")] = '\0';
 
         if (strlen(input) == 0) {
-            fprintf(stderr, "%s", CMD_WARN_NO_CMD);
+            fprintf(stderr, "%s\n", CMD_WARN_NO_CMD);
+            last_return_code = 0; 
+            continue;
+        }                
+
+        if (strcmp(input, EXIT_CMD) == 0) {
+            printf("exiting...\n");
+            break;
+        }
+
+        if (strncmp(input, "cd ", 3) == 0) {
+            char *dir = input + 3;
+            while (isspace(*dir)) dir++;
+            if (chdir(dir) != 0) {
+                perror("cd error");
+            }
             continue;
         }
 
-        int parse_status = build_cmd_buff(input, &cmd);
+        int parse_status = build_cmd_list(input, &cmd_list);
         if (parse_status == WARN_NO_CMDS) {
             fprintf(stderr, "%s", CMD_WARN_NO_CMD);
             continue;
@@ -239,21 +267,8 @@ int exec_local_cmd_loop() {
             continue;
         }
 
-        Built_In_Cmds bic = exec_built_in_cmd(&cmd);
-        if (bic == BI_CMD_EXIT) {
-            free_cmd_buff(&cmd);
-            break;
-        }
-        else if (bic == BI_NOT_BI) {
-            last_return_code = exec_cmd(&cmd);
-            if (last_return_code != OK) {
-                fprintf(stderr, "The command exited with status %d\n", last_return_code);
-            }
-        }
-
-        free_cmd_buff(&cmd);
+        execute_pipeline(&cmd_list);
     }
 
-    free_cmd_buff(&cmd);
     return OK;
 }
