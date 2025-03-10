@@ -149,6 +149,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
     return OK;
 }
 
+// Free command list
 int free_cmd_list(command_list_t *clist) {
     for (int i = 0; i < clist->num; i++) {
         free_cmd_buff(&clist->commands[i]);
@@ -157,8 +158,11 @@ int free_cmd_list(command_list_t *clist) {
     return OK;
 }
 
+// Execute built-in commands
 Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
     if (strcmp(cmd->argv[0], "exit") == 0) {
+        printf("exiting...\n");
+        fflush(stdout); 
         free_cmd_buff(cmd);
         exit(0);
     }
@@ -179,72 +183,50 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
 
 int execute_pipeline(command_list_t *clist) {
     int num_cmds = clist->num;
-    int pipes[CMD_MAX - 1][2];
+    int prev_pipe = -1;
+    int fd[2];
     pid_t pids[num_cmds];
 
-    for (int i = 0; i < num_cmds - 1; i++) {
-        if (pipe(pipes[i]) < 0) {
-            perror("pipe failed");
-            return ERR_EXEC_CMD;
-        }
-    }
-
     for (int i = 0; i < num_cmds; i++) {
-        pids[i] = fork();
-
-        if (pids[i] < 0) {
-            perror("fork failed");
+        if (i < num_cmds - 1 && pipe(fd) < 0) {
+            perror("pipe");
             return ERR_EXEC_CMD;
         }
 
-        if (pids[i] == 0) { 
+        pids[i] = fork();
+        if (pids[i] < 0) {
+            perror("fork");
+            return ERR_EXEC_CMD;
+        }
+
+        if (pids[i] == 0) { // Child
             if (i > 0) {
-                dup2(pipes[i - 1][0], STDIN_FILENO);
+                dup2(prev_pipe, STDIN_FILENO);
+                close(prev_pipe);
             }
-
             if (i < num_cmds - 1) {
-                dup2(pipes[i][1], STDOUT_FILENO);
+                dup2(fd[1], STDOUT_FILENO);
+                close(fd[1]);
             }
-
-            for (int j = 0; j < num_cmds - 1; j++) {
-                close(pipes[j][0]);
-                close(pipes[j][1]);
-            }
-
-            int fd = -1;
-            for (int j = 0; j < clist->commands[i].argc; j++) {
-                if (strcmp(clist->commands[i].argv[j], ">") == 0) {
-                    fd = open(clist->commands[i].argv[j + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                    clist->commands[i].argv[j] = NULL;  
-                } 
-                else if (strcmp(clist->commands[i].argv[j], ">>") == 0) {
-                    fd = open(clist->commands[i].argv[j + 1], O_WRONLY | O_CREAT | O_APPEND, 0644);
-                    clist->commands[i].argv[j] = NULL; 
-                }
-            }
-            if (fd != -1) {
-                dup2(fd, STDOUT_FILENO);
-                close(fd);
-            }
-
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
             perror("execvp failed");
             exit(ERR_EXEC_CMD);
+        } else { // Parent
+            if (i > 0) close(prev_pipe);
+            if (i < num_cmds - 1) {
+                prev_pipe = fd[0];
+                close(fd[1]);
+            }
         }
-    }
-
-    for (int i = 0; i < num_cmds - 1; i++) {
-        close(pipes[i][0]);
-        close(pipes[i][1]);
     }
 
     for (int i = 0; i < num_cmds; i++) {
         waitpid(pids[i], NULL, 0);
     }
-
     return OK;
 }
 
+// Main execution loop
 int exec_local_cmd_loop() {
     char input_buffer[SH_CMD_MAX];
     command_list_t clist;
@@ -256,15 +238,10 @@ int exec_local_cmd_loop() {
             break;
         }
         input_buffer[strcspn(input_buffer, "\n")] = '\0';
-
         if (strlen(input_buffer) == 0) {
-            printf("warning: no commands provided\n"); 
+            printf(CMD_WARN_NO_CMD);
+            printf("\n"); 
             continue;
-        }
-
-        if (strcmp(input_buffer, "exit") == 0) {
-            printf("exiting...\n");
-            break;
         }
 
         int rc = build_cmd_list(input_buffer, &clist);
@@ -282,7 +259,5 @@ int exec_local_cmd_loop() {
         execute_pipeline(&clist);
         free_cmd_list(&clist);
     }
-
-    printf("cmd loop returned 0\n");
     return OK;
 }
