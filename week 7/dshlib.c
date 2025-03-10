@@ -198,6 +198,39 @@ int execute_pipeline(command_list_t *clist) {
         }
 
         if (pids[i] == 0) {
+            int out_fd = -1; 
+            char *argv_clean[CMD_ARGV_MAX];
+            int j = 0;
+
+            for (int k = 0; k < clist->commands[i].argc; k++) {
+                if (strcmp(clist->commands[i].argv[k], ">") == 0) {
+                    if (k + 1 < clist->commands[i].argc) {
+                        out_fd = open(clist->commands[i].argv[k + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (out_fd < 0) {
+                            perror("Error opening output file");
+                            exit(ERR_EXEC_CMD);
+                        }
+                        dup2(out_fd, STDOUT_FILENO);
+                        close(out_fd);
+                        k++; 
+                    }
+                } else if (strcmp(clist->commands[i].argv[k], ">>") == 0) {
+                    if (k + 1 < clist->commands[i].argc) {
+                        out_fd = open(clist->commands[i].argv[k + 1], O_WRONLY | O_CREAT | O_APPEND, 0644);
+                        if (out_fd < 0) {
+                            perror("Error opening output file");
+                            exit(ERR_EXEC_CMD);
+                        }
+                        dup2(out_fd, STDOUT_FILENO);
+                        close(out_fd);
+                        k++; 
+                    }
+                } else {
+                    argv_clean[j++] = clist->commands[i].argv[k];
+                }
+            }
+            argv_clean[j] = NULL; 
+
             if (i > 0) {
                 dup2(prev_pipe, STDIN_FILENO);
                 close(prev_pipe);
@@ -206,10 +239,11 @@ int execute_pipeline(command_list_t *clist) {
                 dup2(fd[1], STDOUT_FILENO);
                 close(fd[1]);
             }
-            execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            
+            execvp(argv_clean[0], argv_clean);
             perror("execvp failed");
             exit(ERR_EXEC_CMD);
-        } else { // Parent
+        } else { // Parent Process
             if (i > 0) close(prev_pipe);
             if (i < num_cmds - 1) {
                 prev_pipe = fd[0];
