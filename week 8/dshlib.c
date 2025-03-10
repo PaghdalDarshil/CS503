@@ -38,7 +38,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 
     while (*ptr) {
         while (isspace(*ptr) && !in_quotes) ptr++;
-
         if (*ptr == '"') {
             in_quotes = !in_quotes;
             ptr++;
@@ -47,7 +46,7 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
             token_start = ptr;
         }
 
-        while (*ptr && (in_quotes || !isspace(*ptr))) { 
+        while (*ptr && (in_quotes || !isspace(*ptr))) {
             if (*ptr == '"') {
                 in_quotes = !in_quotes;
                 *ptr = '\0';
@@ -56,18 +55,17 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
         }
 
         if (*ptr) {
-            *ptr = '\0'; 
+            *ptr = '\0';
             ptr++;
         }
 
+        cmd_buff->argv[cmd_buff->argc++] = token_start;
         if (cmd_buff->argc >= CMD_ARGV_MAX - 1) {
             fprintf(stderr, "error: too many arguments\n");
             return ERR_CMD_ARGS_BAD;
         }
-
-        cmd_buff->argv[cmd_buff->argc++] = token_start;
     }
-    cmd_buff->argv[cmd_buff->argc] = NULL; 
+    cmd_buff->argv[cmd_buff->argc] = NULL;
     return OK;
 }
 
@@ -92,7 +90,6 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
             free_cmd_list(clist);
             return rc;
         }
-
         clist->num++;
         token = strtok_r(NULL, "|", &saveptr);
     }
@@ -170,55 +167,47 @@ Built_In_Cmds match_command(const char *input) {
 
 int execute_pipeline(command_list_t *clist) {
     int num_cmds = clist->num;
-    int prev_pipe = -1;
-    int fd[2];
+    int pipes[2 * (num_cmds - 1)]; 
     pid_t pids[num_cmds];
 
-    for (int i = 0; i < num_cmds; i++) {
-        if (i < num_cmds - 1 && pipe(fd) < 0) {
-            perror("pipe");
+    for (int i = 0; i < num_cmds - 1; i++) {
+        if (pipe(pipes + i * 2) < 0) {
+            perror("pipe failed");
             return ERR_EXEC_CMD;
         }
+    }
 
+    for (int i = 0; i < num_cmds; i++) {
         pids[i] = fork();
         if (pids[i] < 0) {
-            perror("fork");
+            perror("fork failed");
             return ERR_EXEC_CMD;
         }
 
-        if (pids[i] == 0) {
-            if (clist->commands[i].argv[0] == NULL) {
-                fprintf(stderr, "Error: empty command in pipeline\n");
-                exit(EXIT_FAILURE);
-            }
-
+        if (pids[i] == 0) { 
             if (i > 0) {
-                dup2(prev_pipe, STDIN_FILENO);
-                close(prev_pipe);
+                dup2(pipes[(i - 1) * 2], STDIN_FILENO);
             }
             if (i < num_cmds - 1) {
-                dup2(fd[1], STDOUT_FILENO);
-                close(fd[1]);
+                dup2(pipes[i * 2 + 1], STDOUT_FILENO);
             }
-
-            if (i > 0) close(prev_pipe);
-            if (i < num_cmds - 1) close(fd[0]);
-
+            for (int j = 0; j < 2 * (num_cmds - 1); j++) {
+                close(pipes[j]);
+            }
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
             perror("execvp failed");
             exit(ERR_EXEC_CMD);
-        } else {
-            if (i > 0) close(prev_pipe);
-            if (i < num_cmds - 1) {
-                prev_pipe = fd[0];
-                close(fd[1]);
-            }
         }
+    }
+
+    for (int i = 0; i < 2 * (num_cmds - 1); i++) {
+        close(pipes[i]);
     }
 
     for (int i = 0; i < num_cmds; i++) {
         waitpid(pids[i], NULL, 0);
     }
+
     return OK;
 }
 
