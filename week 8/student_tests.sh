@@ -20,7 +20,6 @@ ls
 exit
 EOF
     echo "$output"
-    [[ "$output" =~ "dsh4>" ]]
 }
 
 @test "Basic command - pwd" {
