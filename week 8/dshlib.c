@@ -12,8 +12,12 @@
 int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
     if (!cmd_buff) return ERR_MEMORY;
     cmd_buff->_cmd_buffer = (char *)malloc(SH_CMD_MAX);
-    if (!cmd_buff->_cmd_buffer) return ERR_MEMORY; 
-    memset(cmd_buff, 0, sizeof(cmd_buff_t)); 
+    if (!cmd_buff->_cmd_buffer) return ERR_MEMORY;  
+    memset(cmd_buff->argv, 0, sizeof(cmd_buff->argv));
+    cmd_buff->argc = 0;
+    cmd_buff->input_file = NULL;
+    cmd_buff->output_file = NULL;
+    
     return OK;
 }
 
@@ -115,8 +119,6 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
 
     if (strcmp(cmd->argv[0], "cd") == 0) {
         char *target_dir = NULL;
-
-        // Case: No argument provided for cd (cd should go to HOME)
         if (cmd->argc == 1 || cmd->argv[1] == NULL) {
             target_dir = getenv("HOME");
             if (!target_dir) {
@@ -124,17 +126,13 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
                 return ERR_CMD_ARGS_BAD;
             }
         } 
-        // Case: Single argument provided (cd target_dir)
         else if (cmd->argc == 2) {
             target_dir = cmd->argv[1];
         } 
-        // Case: Too many arguments
         else {
             fprintf(stderr, "error: cd command accepts at most 1 argument\n");
             return ERR_CMD_ARGS_BAD;
         }
-
-        // Perform directory change
         if (chdir(target_dir) != 0) {
             perror("cd failed");
         }
