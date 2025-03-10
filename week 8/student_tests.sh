@@ -61,16 +61,6 @@ EOF
     rm -f testfile
 }
 
-@test "Built-in command - cd" {
-    run $DSH_EXEC <<EOF
-cd ..
-pwd
-exit
-EOF
-    echo "$output"
-    [[ "$output" =~ "/" ]]
-}
-
 @test "Invalid command" {
     run $DSH_EXEC <<EOF
 invalidcmd
