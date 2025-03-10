@@ -149,7 +149,6 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
     return OK;
 }
 
-// Free command list
 int free_cmd_list(command_list_t *clist) {
     for (int i = 0; i < clist->num; i++) {
         free_cmd_buff(&clist->commands[i]);
@@ -158,7 +157,6 @@ int free_cmd_list(command_list_t *clist) {
     return OK;
 }
 
-// Execute built-in commands
 Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
     if (strcmp(cmd->argv[0], "exit") == 0) {
         printf("exiting...\n");
@@ -199,7 +197,7 @@ int execute_pipeline(command_list_t *clist) {
             return ERR_EXEC_CMD;
         }
 
-        if (pids[i] == 0) { // Child
+        if (pids[i] == 0) {
             if (i > 0) {
                 dup2(prev_pipe, STDIN_FILENO);
                 close(prev_pipe);
@@ -226,7 +224,6 @@ int execute_pipeline(command_list_t *clist) {
     return OK;
 }
 
-// Main execution loop
 int exec_local_cmd_loop() {
     char input_buffer[SH_CMD_MAX];
     command_list_t clist;
