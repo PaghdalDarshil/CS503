@@ -117,27 +117,27 @@ make
 Observe the output and answer these questions:
 
 - What is your UID in the new user namespace?
--    Ans: - Inside the user namespace, the UID appears as:
--             uid=0(root) gid=65534(nogroup)
--    This means the process is assigned UID 0 (root) within the namespace but remains unprivileged.
+--   Ans: - Inside the user namespace, the UID appears as:
+--             uid=0(root) gid=65534(nogroup)
+  --This means the process is assigned UID 0 (root) within the namespace but remains unprivileged.
 - What capabilities do you have in the user namespace?
--    Ans: - The capabilities inside the namespace are:
--             CapInh:  0000000000000000
--             CapPrm:  0000000000000000
--             CapEff:  0000000000000000
--             CapBnd:  000001ffffffffff
--             CapAmb:  0000000000000000
--    CapEff (Effective capabilities): 0000000000000000 → No real privileges.
--    CapPrm (Permitted capabilities): 0000000000000000 → Cannot execute privileged operations.
--    CapBnd (Bounding capabilities): 000001ffffffffff → Defines the max set of capabilities available.
--    Even though the UID appears as 0, the process has no effective privileges, preventing it from performing root-level actions like mounting or modifying the system settings.
+--    Ans: - The capabilities inside the namespace are:
+--             CapInh:  0000000000000000
+--             CapPrm:  0000000000000000
+--             CapEff:  0000000000000000
+--             CapBnd:  000001ffffffffff
+--             CapAmb:  0000000000000000
+--    CapEff (Effective capabilities): 0000000000000000 → No real privileges.
+--    CapPrm (Permitted capabilities): 0000000000000000 → Cannot execute privileged operations.
+--    CapBnd (Bounding capabilities): 000001ffffffffff → Defines the max set of capabilities available.
+--    Even though the UID appears as 0, the process has no effective privileges, preventing it from performing root-level actions like mounting or modifying the system settings.
 
 - How do the UID mappings work?
--    Ans:- UID mappings allow an unprivileged user on the host to appear as UID 0 (root) inside the namespace.
--          0    1000    1
--    This means:
--    UID 0 inside the namespace corresponds to UID 1000 on the host.
--    The process inside the namespace sees itself as root (UID 0) but is still restricted to its original host UID permissions.
+--    Ans:- UID mappings allow an unprivileged user on the host to appear as UID 0 (root) inside the namespace.
+--          0    1000    1
+--    This means:
+---    UID 0 inside the namespace corresponds to UID 1000 on the host.
+---    The process inside the namespace sees itself as root (UID 0) but is still restricted to its original host UID permissions.
 
 ## Part 3: Exploring Isolation with User Namespaces
 
