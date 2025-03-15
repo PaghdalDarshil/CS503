@@ -119,8 +119,25 @@ Observe the output and answer these questions:
 - What is your UID in the new user namespace?
 -    Ans: - Inside the user namespace, the UID appears as:
 -             uid=0(root) gid=65534(nogroup)
+-    This means the process is assigned UID 0 (root) within the namespace but remains unprivileged.
 - What capabilities do you have in the user namespace?
+-    Ans: - The capabilities inside the namespace are:
+-             CapInh:  0000000000000000
+-             CapPrm:  0000000000000000
+-             CapEff:  0000000000000000
+-             CapBnd:  000001ffffffffff
+-             CapAmb:  0000000000000000
+-    CapEff (Effective capabilities): 0000000000000000 → No real privileges.
+-    CapPrm (Permitted capabilities): 0000000000000000 → Cannot execute privileged operations.
+-    CapBnd (Bounding capabilities): 000001ffffffffff → Defines the max set of capabilities available.
+-    Even though the UID appears as 0, the process has no effective privileges, preventing it from performing root-level actions like mounting or modifying the system settings.
+
 - How do the UID mappings work?
+-    Ans:- UID mappings allow an unprivileged user on the host to appear as UID 0 (root) inside the namespace.
+-          0    1000    1
+-    This means:
+-    UID 0 inside the namespace corresponds to UID 1000 on the host.
+-    The process inside the namespace sees itself as root (UID 0) but is still restricted to its original host UID permissions.
 
 ## Part 3: Exploring Isolation with User Namespaces
 
@@ -132,6 +149,11 @@ chmod +x check_isolation.sh
 ```
 
 Note the differences in the output before and after entering the user namespace.
+
+<img width="1180" alt="Screenshot 2025-03-14 at 11 26 52 PM" src="https://github.com/user-attachments/assets/9c824642-eb4d-4591-ac3b-105b9d50559f" />
+<img width="1181" alt="Screenshot 2025-03-14 at 11 27 09 PM" src="https://github.com/user-attachments/assets/2b59d7db-263c-4e03-9f02-f584b6821784" />
+<img width="982" alt="Screenshot 2025-03-14 at 11 27 24 PM" src="https://github.com/user-attachments/assets/f1deaf85-843c-4307-b64f-95c78923fe31" />
+
 
 ## Part 4: Practical Applications - Running a Program with "Root" Privileges
 
@@ -145,6 +167,9 @@ make
 
 Notice that inside the user namespace, your UID is 0 (root), but this is only within the namespace!
 
+<img width="1008" alt="Screenshot 2025-03-14 at 11 28 38 PM" src="https://github.com/user-attachments/assets/d146a6e5-e9c2-4c97-a4e4-f7c594b3311e" />
+
+
 2. Try to create a file as "root" in your home directory, using your program:
 
 ```
@@ -153,6 +178,9 @@ ls -la ~/root_test_file
 ```
 
 The file is created, but notice who owns it on the real system!
+
+<img width="1066" alt="Screenshot 2025-03-14 at 11 29 10 PM" src="https://github.com/user-attachments/assets/7a06fb5a-c13a-4691-8a82-cd6147648942" />
+
 
 ## Part 5: Exploring the Limitations
 
@@ -165,6 +193,8 @@ mkdir -p /tmp/test_mount
 
 This will likely fail with "Operation not permitted" because of missing capabilities or namespace configurations.
 
+<img width="944" alt="Screenshot 2025-03-14 at 11 29 49 PM" src="https://github.com/user-attachments/assets/d5f9f585-f12c-407b-93dd-a8df80998fa0" />
+
 2. Try to access network namespaces (which usually require real root):
 
 ```
@@ -173,13 +203,15 @@ This will likely fail with "Operation not permitted" because of missing capabili
 
 Note and document what errors you encounter.
 
+<img width="1044" alt="Screenshot 2025-03-14 at 11 30 28 PM" src="https://github.com/user-attachments/assets/7c1b102c-2313-48f2-b782-6ac13f4acffd" />
+
+
 ## Deliverables
 
-Prepare a report in plain .txt or markdown .md containing:
-
 1. A brief introduction to Linux user namespaces (in your own words)
-2. Terminal outputs from each part of the lab
-3. Answers to the following questions:
+  - Ans: - 
+3. Terminal outputs from each part of the lab
+4. Answers to the following questions:
    - How do user namespaces provide the illusion of having root privileges?
    - What is the purpose of UID/GID mapping in user namespaces?
    - What limitations did you encounter when working with user namespaces?
@@ -187,17 +219,5 @@ Prepare a report in plain .txt or markdown .md containing:
    - What security implications do user namespaces have?
    - Why are other namespace types typically not available to unprivileged users?
 
-4. A conclusion section with your insights and any challenges you faced.
+5. A conclusion section with your insights and any challenges you faced.
 
-## Submission Instructions
-
-1. Compile all your command outputs and answers into a single .txt or .md document.
-2. Submit the document itself (not a git repo link) to the "Week 10 - Isolation" assignment in Blackboard.
-
-## What to hand in and Grading Rubric
-
-Grading Rubric
-- 25 points: Completeness of terminal outputs
-- 25 points: Quality of question answers
-
-Total points achievable is 50.
