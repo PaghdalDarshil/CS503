@@ -226,9 +226,23 @@ Note and document what errors you encounter.
      - Mounting failed: Attempting to mount a filesystem resulted in Operation not permitted.
      - Network changes failed: The ip link add command was denied.
        
-   5. How might user namespaces be used in container technology?
-   6. What security implications do user namespaces have?
-   7. Why are other namespace types typically not available to unprivileged users?
+   4. How might user namespaces be used in container technology?
+      - Ans: - User namespaces are used in containers to allow processes to run as root inside the container while keeping them unprivileged on the host. This is a key security feature in container runtimes like Docker and Podman, preventing processes inside the container from affecting the host system.
+
+   5. What security implications do user namespaces have?
+      - Ans: - Potential privilege escalation: If misconfigured, a user could gain access to sensitive files.
+          -  Increased attack surface: More kernel interactions mean a greater risk of security vulnerabilities.
+          -  Filesystem risks: Improper mappings could allow namespace processes to modify host files.
+
+   6. Why are other namespace types typically not available to unprivileged users?
+      - Ans: - PID Namespace: Prevents access to host process IDs.
+          - Network Namespace: Could allow an unprivileged user to manipulate network settings.
+          - Mount Namespace: Stops unauthorized filesystem modifications.
+          - IPC Namespace: Blocks inter-process communication between namespaces and the host.
+
 
 5. A conclusion section with your insights and any challenges you faced.
+   - Ans: - This lab helped me understand how user namespaces work by allowing a user to run processes as root inside a namespace while still being unprivileged outside. UID/GID mapping is a key feature that enables this without compromising security. However, the limitations, like lack of real privileges and restricted operations, make sure that the namespace remains isolated. These concepts are widely used in container technologies, which rely on namespaces for process isolation.
+   - One challenge I faced was the "Operation not permitted" error when writing to /proc/self/uid_map, which prevented the user mapping from being set up properly. Despite this, I was still able to observe the key behaviors of user namespaces, including isolation and restricted capabilities.
+
 
