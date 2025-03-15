@@ -216,16 +216,16 @@ Note and document what errors you encounter.
 2. Answers to the following questions:
    1. How do user namespaces provide the illusion of having root privileges?
    - Ans: - User namespaces allow an unprivileged user to be mapped as UID 0 (root) inside a namespace, which makes it look like they have root access. However, they still lack real root privileges outside of the namespace, so they can’t make system-wide changes.
-   -  
+     
    2. What is the purpose of UID/GID mapping in user namespaces?
    - Ans: - UID/GID mapping allows a process inside a namespace to appear as a different user than it is on the host system. This enables unprivileged users to run processes as root inside the namespace, while they are still restricted to their original permissions on the host.
-   - 
+     
    3. What limitations did you encounter when working with user namespaces?
    - Ans: -Failed UID/GID mapping: write: Operation not permitted when trying to modify /proc/self/uid_map.
      - No real privileges: The process inside the namespace had CapEff = 0000000000000000, meaning it couldn't perform privileged operations.
      - Mounting failed: Attempting to mount a filesystem resulted in Operation not permitted.
      - Network changes failed: The ip link add command was denied.
-     - 
+       
    5. How might user namespaces be used in container technology?
    6. What security implications do user namespaces have?
    7. Why are other namespace types typically not available to unprivileged users?
