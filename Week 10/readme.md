@@ -221,11 +221,11 @@ Note and document what errors you encounter.
    - Ans: - UID/GID mapping allows a process inside a namespace to appear as a different user than it is on the host system. This enables unprivileged users to run processes as root inside the namespace, while they are still restricted to their original permissions on the host.
    - 
    3. What limitations did you encounter when working with user namespaces?
-   - Ans: 1. Failed UID/GID mapping: write: Operation not permitted when trying to modify /proc/self/uid_map.
-   2. No real privileges: The process inside the namespace had CapEff = 0000000000000000, meaning it couldn't perform privileged operations.
-   3. Mounting failed: Attempting to mount a filesystem resulted in Operation not permitted.
-   4. Network changes failed: The ip link add command was denied.
-   - 
+   - Ans: -Failed UID/GID mapping: write: Operation not permitted when trying to modify /proc/self/uid_map.
+     - No real privileges: The process inside the namespace had CapEff = 0000000000000000, meaning it couldn't perform privileged operations.
+     - Mounting failed: Attempting to mount a filesystem resulted in Operation not permitted.
+     - Network changes failed: The ip link add command was denied.
+     - 
    5. How might user namespaces be used in container technology?
    6. What security implications do user namespaces have?
    7. Why are other namespace types typically not available to unprivileged users?
