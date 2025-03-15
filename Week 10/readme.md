@@ -212,10 +212,10 @@ Note and document what errors you encounter.
 ## Deliverables
 
 1. A brief introduction to Linux user namespaces (in your own words)
-  - Ans: - 
-3. Terminal outputs from each part of the lab
-4. Answers to the following questions:
+  - Ans: - Linux user namespaces allow processes to run with different user and group IDs than they have on the host system. This means that a user can appear to have root privileges within a namespace while still being restricted as an unprivileged user outside of it. This is an important feature for containerization and security, as it enables process isolation without giving full root access. 
+2. Answers to the following questions:
    - How do user namespaces provide the illusion of having root privileges?
+         - Ans: - 
    - What is the purpose of UID/GID mapping in user namespaces?
    - What limitations did you encounter when working with user namespaces?
    - How might user namespaces be used in container technology?
