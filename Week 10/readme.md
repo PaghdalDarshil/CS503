@@ -9,11 +9,6 @@ In this lab, you will explore Linux user namespaces, which are a fundamental bui
 - Experience how UID/GID mapping works in practice
 - Observe how capabilities function inside user namespaces
 
-## Prerequisites
-- Access to a Linux machine (Ubuntu 20.04+ or other modern distribution)
-- Unprivileged user namespace support must be enabled
-- Basic command-line familiarity
-
 ## Checking System Compatibility
 Before starting the lab, check if your system supports unprivileged user namespaces:
 
